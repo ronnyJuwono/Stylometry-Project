@@ -16,6 +16,7 @@ dependencies = [
   "SQLAlchemy>=2.0,<3",
   "psycopg[binary]>=3.2,<4",
   "python-dotenv>=1.0,<2",
+  "pydantic>=2.10,<3",
 ]
 
 [project.optional-dependencies]

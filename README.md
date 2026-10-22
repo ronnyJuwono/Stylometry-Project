@@ -87,3 +87,27 @@ guardrail, not a data protection guarantee. Do not force-add ignored files.
 Inspect `git status`, `git ls-files`, `git diff --cached --name-only`, and
 `git diff --cached` before every commit. Never commit `.env` or credentials.
 Do not import real documents or change approved methodology without authorization.
+
+## S2A: data contracts and Paper 1 specification (review draft)
+
+- [S2A development handoff and validation results](docs/s2a-review.md)
+- [Research methodology and reported references](docs/paper1-methodology.md)
+- [Discrepancy register and required source materials](docs/paper1-open-questions.md)
+- [PostgreSQL schema proposal (not applied)](docs/postgresql-schema-proposal.md)
+- `src/stylometry/contracts.py`: strict, frozen Pydantic metadata records and a
+  closed-graph `ResearchBundle` validation boundary. Use constructors,
+  `model_validate`, or `model_validate_json` to validate; Pydantic's
+  `model_construct` and unvalidated `model_copy(update=...)` are not ingestion paths.
+- `src/stylometry/paper1.py`: task definitions and explicitly reported reference
+  counts supplied in S2A; no results have been recomputed.
+- `tests/conftest.py` and `tests/test_contracts.py`: artificial metadata-only
+  fixtures and validation tests; counts/digests/method refs are synthetic stubs,
+  not extracted writing or approved scientific algorithms.
+
+Run `uv sync --extra dev --locked` after checking out this branch, then
+`.\.venv\Scripts\python.exe -m pytest`. No real source documents, database tables,
+or analytical experiments are loaded or created. The nine-stage UI is unchanged.
+The user has authorized one S2A review commit and a push of
+`feature/paper1-data-contracts` only. Stop at **Approval Gate S2A** for ChatGPT
+review after publishing that branch. This authorization does not permit merging
+into main, source access, database migrations, or scientific implementation.
