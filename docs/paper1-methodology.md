@@ -2,18 +2,51 @@
 
 Study: **A Data Science Approach to Measuring Stylometric Stability and
 Variability in EFL Student Writing**. Purpose: investigate stylometric stability
-and variability across EFL writing tasks. Formal research questions and exact
-statistical estimands require the approved paper/protocol.
+and variability across EFL writing tasks. A manuscript draft exists as a project
+research source; it is not an approved final protocol.
 
 ## Evidence and authority
 
-The facts below are confirmed **as supplied in the user's S2A task context**,
-not independently checked against the paper, archive, code, or source documents.
-No source Drive files were opened or loaded. All counts are reported reference
-values, not application results, acceptance tests for an invented dataset, or
+This specification incorporates the user's S2A context and S2A.1 correction
+describing methods explicitly documented in the existing manuscript draft. The
+draft's existence and documented methods must not be classified as unavailable.
+The draft itself has not been independently inspected or version-validated in
+this task; no source Drive files were opened or loaded. All counts are reported
+reference values, not application results, acceptance tests for an invented dataset, or
 evidence of completed stages. The machine-readable references are in
 `src/stylometry/paper1.py`. This document records the supplied methodology; it
-does not revise or fill gaps in the approved scientific methodology.
+does not revise the draft methodology or grant final protocol approval.
+
+### Research source reference (pending validated copy)
+
+Source key: `P1-MANUSCRIPT-DRAFT`. Title: **A Data Science Approach to Measuring
+Stylometric Stability and Variability in EFL Student Writing**. Status: manuscript
+draft, existing project research source, described in the user's S2A.1 correction.
+Validated-copy reference/locator: **TBD**. Draft version/date: **TBD**. Copy SHA-256:
+**TBD**. Relevant section/page references: **TBD**. Validation/reviewer/date:
+**TBD**. These placeholders do not imply that the source is absent or approved.
+Record a safe reference to the eventual validated copy; do not commit private
+source documents or locators exposing student information.
+
+### Evidence categories
+
+1. **Documented in the manuscript draft:** cleaning rules; exact-duplicate
+   exclusion followed by reapplication of the four-task eligibility rule;
+   primary composition of 23 five-task and 12 four-task writers; Spearman
+   correlation; standardized PCA; random-intercept mixed-effects models;
+   writing task as a fixed effect in adjusted models; sensitivity analyses.
+   These statements are attributed to the draft via the S2A.1 correction, not
+   inferred from application output.
+2. **Implementation details unresolved here:** validate the draft copy and map
+   its precise rules to versioned extraction/cleaning/counting code, duplicate
+   comparison representation, model specifications/settings and feature registry.
+   Some details may already appear in the draft or associated code; unresolved
+   in this repository does not mean absent from the research source.
+3. **Genuinely unavailable for this review:** an approved final protocol and a
+   validated, version-pinned source copy are not available to this implementation
+   review. Verified publication status and a complete imported authoritative
+   feature registry are also unavailable here. Whether further records exist
+   elsewhere must be checked rather than declared absent.
 
 ## Task definitions
 
@@ -33,7 +66,7 @@ resources are not supplied. These genres/forms do not substitute for prompt text
 | Layer | Reported students | Reported texts | Supplied selection information |
 |---|---:|---:|---|
 | Archived source inventory | 46 pseudonymous profiles | 200 nonempty | 230 potential task slots; inventory PASS uses 100 words |
-| Primary analytical corpus | 35 | 163 | Minimum 80 words; at least four eligible tasks per student; duplicate screening |
+| Primary analytical corpus | 35 | 163 | Minimum 80 words; exact-duplicate exclusion, then reapply four-task rule; draft reports 23 five-task / 12 four-task writers |
 | 100-word sensitivity corpus | 24 | 110 | Minimum 100 words; remaining construction details unresolved |
 | Balanced five-task corpus | 23 | 115 | Five tasks per student; relationship to other thresholds/cohorts unresolved |
 
@@ -43,37 +76,44 @@ Inventory PASS at 100 words is not primary eligibility at 80 words. A text of
 not receive inventory PASS; other eligibility decisions still apply. Do not
 infer that all 30 remaining source slots are one specific kind of missingness.
 The denominators alone cannot explain every exclusion or reconstruct membership.
+The 23 five-task / 12 four-task composition is a draft-reported reference, not a
+composition calculated or verified by this application. It does not identify
+which writers or texts belong to the primary corpus.
 
 Four cross-student duplicate task pairs involving two anonymized profiles were
-reported, with duplicated texts excluded. Pair identities, whether pairs share
+reported, with exact-duplicate texts excluded. The draft documents reapplication
+of the four-task rule after these exclusions. Pair identities, whether pairs share
 members, and which side(s) were removed are unresolved. Do not infer eight
 distinct excluded samples or remove entire profiles from this statement.
 
 There are 43 reported engineered features and 24 primary analysis features.
-Neither names, formulas, feature families, units, nor the primary subset have
-been supplied. The feature registry remains empty and incomplete.
+The complete authoritative names, formulas, feature families, units and primary
+subset have not been imported or validated here. Do not infer that the draft has
+no feature information. The application registry remains empty and incomplete.
 
 ## Process specification and unresolved boundaries
 
 The nine existing stages remain unchanged. No stage is executed by S2A.
 
-| Stage | Confirmed scope | Required before reproducible execution |
+| Stage | Supplied context / draft-documented methodology | Required before reproducible execution |
 |---|---|---|
 | 1 Data preparation | Source and analytical layers must be distinguished | Authorized inventory, slot mapping, collection/consent documentation, corpus versions |
-| 2 Text extraction and cleaning | Source provenance and versioned clean text are needed | Approved extractor, segmentation, normalization, encoding, cleaning order and rules |
-| 3 QC and selection | Primary 80 words / four tasks; duplicate exclusions; separate inventory 100 PASS | Exact tokenizer, duplicate definition and adjudication, missingness codes, operation order, cohort memberships |
+| 2 Text extraction and cleaning | Draft documents cleaning rules; provenance and versioned clean text are required by the application design | Validate and transcribe the actual draft rules; map extractor, segmentation, encoding and cleaning steps to versioned code |
+| 3 QC and selection | Primary 80 words / four tasks; exact-duplicate exclusion followed by reapplication of four-task rule; 23 five-task / 12 four-task writers; separate inventory 100 PASS | Exact tokenizer, duplicate comparison representation/implementation, adjudication ledger, remaining selection details and cohort memberships |
 | 4 Feature engineering and transformation | 43 engineered / 24 primary features reported | Authoritative registry, formulas, implementations, resources, transforms, missing/zero rules |
-| 5 Exploratory data analysis | Planned workflow stage | Approved summaries/plots, groups, transformations, handling of missing data |
-| 6 Statistical stability modeling | Planned stability investigation | Exact models/estimands, ICC formulation if used, effects, intervals, assumptions, software |
-| 7 Robustness and sensitivity analysis | 100-word and balanced five-task corpora reported | Exact construction rules, comparison plan, robustness model settings |
+| 5 Exploratory data analysis | Draft documents Spearman correlation and standardized PCA | Validate feature inputs, standardization convention, correlation/PCA settings, missing-data handling and plot specifications |
+| 6 Statistical stability modeling | Draft documents random-intercept mixed-effects models and writing task as a fixed effect in adjusted models | Validate exact formulas, grouping structure, estimation/settings, intervals, diagnostics and software; no formula inferred here |
+| 7 Robustness and sensitivity analysis | Draft documents sensitivity analyses; 100-word and balanced five-task corpora reported | Validate exact cohort construction, sensitivity comparisons and model settings from the source |
 | 8 Results interpretation | Planned workflow stage | Approved interpretive framework, uncertainty and multiplicity conventions |
 | 9 Conclusions | Planned workflow stage | Validated outputs and supported claims |
 
-No tokenization, duplicate similarity threshold, extractor, cleaning procedure,
-feature formula, transformation, model, seed, or analysis result is selected here.
-Order of duplicate removal, word counting, and writer eligibility must be obtained;
-these operations need not commute. Do not infer sensitivity membership from the
-primary corpus or balanced membership from the 100-word corpus.
+The draft-documented methods above are recorded without implementing them.
+No tokenization rules, extractor, feature formulas, numerical settings, model
+formulas or seeds are invented. Exact-duplicate screening must not be replaced
+with an assumed similarity threshold. The known order is exact-duplicate exclusion
+followed by reapplication of the four-task rule; remaining extraction, cleaning,
+counting and selection details require source validation. Do not infer sensitivity
+membership from the primary corpus or balanced membership from the 100-word corpus.
 
 ## Proposed application metadata behavior (not scientific rules)
 
@@ -95,6 +135,13 @@ linear, append-only chain per successful extraction/sample, with versions starti
 at one. Re-extraction creates a separate chain; snapshots pin the exact derivation
 UUID and never implicitly select a latest version. The S2A proposal deliberately
 does not overwrite history. See the schema proposal for the design to review.
+
+**Future dissertation design note:** the current one-writer/task/corpus logical
+sample model may need extension for repeated submissions or student-authored
+drafts of the same task. Processing derivations describe transformations of a
+source submission and must not silently stand in for separate submissions or
+authored drafts. Review submission/attempt identity and relationships in a later
+study design; S2A.1 changes neither contracts nor the proposed database schema.
 
 QC receipts record context, target, exact text version, supplied count, tokenizer
 reference, reasons, private evidence, configuration, and timestamps. They do not
