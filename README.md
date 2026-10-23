@@ -56,7 +56,8 @@ The SQLAlchemy factory is lazy; startup never connects, creates tables, or runs
 migrations. A configured URL is **untested**, not proof of connectivity. No live
 connection is performed at startup. Never log URLs or engine exceptions
 that might include credentials. S2B-01 adds the schema and explicit migrations
-described below; no migration has been applied by this implementation task.
+described below. S2B-02 applied the initial migration once to the verified isolated
+local development database; see the implementation report for live results.
 
 ## Structure and reproducibility
 
@@ -115,9 +116,12 @@ Run `uv sync --extra dev --locked` after checking out this branch, then
 or analytical experiments are loaded or created. The nine-stage UI is unchanged.
 The historical S2A authorization allowed one S2A review commit and a push of
 `feature/paper1-data-contracts` only. Stop at **Approval Gate S2A** for ChatGPT
-review after publishing that branch. S2B-01 separately authorizes persistence
-development on `feature/s2b01-postgres-persistence`; stop before commit/push at
-Approval Gate S2B-01. Source access and scientific implementation remain gated.
+review after publishing that branch. S2B-01 persistence development on
+`feature/s2b01-postgres-persistence` was published with separate authorization as
+commit `0ca8894f1ff6b455676c7e24abc15da9744eb339`. S2B-02 authorizes isolated local
+PostgreSQL validation, which passed all 93 tests. The user subsequently approved
+publishing the safe S2B-02 corrections and merging this foundation into `main`.
+Source access, scientific implementation and S2C remain outside that approval.
 
 ## S2B-01 PostgreSQL metadata persistence
 
@@ -178,6 +182,19 @@ empty test target, execute the frozen migration inside a transaction, run
 synthetic constraint/relationship checks with savepoints, and roll back all
 test DDL/data. An explicitly configured unavailable/unsafe target fails; an unset
 test URL skips integration tests. Never point this variable at research storage.
+
+S2B-02 live validation on PostgreSQL 18.6 passed **93 tests with zero skips**.
+The development database is now at `s2b01_0001`; do not rerun the initial migration
+against it. The test database was verified empty after transactional rollback.
+To explicitly load the private test setting from the ignored `.env` and rerun:
+
+```powershell
+.\.venv\Scripts\python.exe -c "from dotenv import load_dotenv; import pytest; load_dotenv('.env', override=False); raise SystemExit(pytest.main())"
+```
+
+The separately supplied `con.env` administrator configuration is also ignored by
+Git. Neither private file may be staged or shared. The application reads `.env`,
+not `con.env`; the administrator connection is only for explicitly authorized setup.
 
 Cross-row integrity is checked when explicitly reconstructing a complete
 `ResearchBundle`, but database triggers, concurrent snapshot sealing and immutable
