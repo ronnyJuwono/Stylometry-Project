@@ -234,3 +234,40 @@ and remaining platform limits are documented in the storage report.
 S2C-01 publication on `feature/s2c01-private-storage` is authorized for ChatGPT
 review after tests and staged-content safety checks. Stop at Approval Gate
 S2C-01; no merge, live research-root configuration or real-data ingestion is authorized.
+
+## S2C-02 synthetic research pipeline foundation
+
+The reusable Python engine now supports **synthetic-only** inventory planning,
+controlled temporary publishing, recoverable P1 metadata staging in an isolated
+test transaction, and a synchronous synthetic inventory runner. Scientific
+processing/analysis methods remain explicitly unavailable. No existing ORM table,
+migration, S2A contract, methodology or dashboard stage is changed.
+
+- [Implementation, recovery, tests and limitations](docs/s2c02-implementation.md)
+- [Future multi-study PostgreSQL proposal — no schema applied](docs/multi-study-data-architecture.md)
+- [Python processing and future runner/UI architecture](docs/research-processing-architecture.md)
+
+Run a self-contained demonstration (Windows fixed local temporary drive only):
+
+```powershell
+.\.venv\Scripts\python.exe -m stylometry.pipeline.demo
+```
+
+The demo allocates and disposes its own temporary artificial files, prints only
+synthetic metadata/counts and verifies retrieval. It does not contact PostgreSQL,
+read a live research root or execute scientific methods. No storage configuration
+is needed or added. For the full test suite with private isolated SQL settings:
+
+```powershell
+.\.venv\Scripts\python.exe -c "from dotenv import load_dotenv; import pytest; load_dotenv('.env', override=False); raise SystemExit(pytest.main())"
+```
+
+One database per environment remains the architecture: common study/corpus/run
+entities are proposed for future additive migrations, with separate P1/P2/D1
+semantics. Current SQL registration accepts complete explicit P1 planning only;
+P2/D1 relationships remain planning metadata. All SQL test work rolls back, and
+filesystem/SQL completion is not presented as one atomic transaction.
+
+S2C-02 publication on `feature/s2c02-research-pipeline` is authorized for independent
+ChatGPT code review after test and staged-content checks. Stop at Approval Gate
+S2C-02; merge, production authorization, real ingestion and S2C-03 remain unauthorized.
