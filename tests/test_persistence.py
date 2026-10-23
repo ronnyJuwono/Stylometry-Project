@@ -85,7 +85,7 @@ def test_offline_migration_is_frozen_and_contains_no_connection(monkeypatch):
     monkeypatch.setattr(db, "create_optional_engine", lambda *a, **k: pytest.fail("Offline connected"))
     output = StringIO()
     cfg = Config("alembic.ini", output_buffer=output)
-    command.upgrade(cfg, "head", sql=True)
+    command.upgrade(cfg, "s2b01_0001", sql=True)  # Freeze the initial schema, not a moving successor head.
     sql = output.getvalue()
     assert sql.count("CREATE TABLE") == 16  # 15 research tables + Alembic version.
     assert "TIMESTAMP WITH TIME ZONE" in sql

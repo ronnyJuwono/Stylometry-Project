@@ -268,6 +268,18 @@ semantics. Current SQL registration accepts complete explicit P1 planning only;
 P2/D1 relationships remain planning metadata. All SQL test work rolls back, and
 filesystem/SQL completion is not presented as one atomic transaction.
 
-S2C-02 publication on `feature/s2c02-research-pipeline` is authorized for independent
-ChatGPT code review after test and staged-content checks. Stop at Approval Gate
-S2C-02; merge, production authorization, real ingestion and S2C-03 remain unauthorized.
+S2C-02 was approved and fast-forward merged into `main` at
+`2c2f9648b0f751af40495aaefef2b4dfde4111c9`. Production authorization and real
+research-data ingestion remain separate approval gates.
+
+## S2C-03 durable operations — local approval gate
+
+The synthetic-only successor is documented in
+[durable operations and recovery](docs/s2c03-durable-operations.md) and
+[migration safety](docs/s2c03-migration-safety.md). Its additive migration is
+prepared for review and tested in isolated rollback fixtures only. Development
+was not connected to or migrated; no live research storage is configured.
+The existing S2C-02 APIs, S2A contracts and scientific dispatchers are preserved.
+Publication on `feature/s2c03-durable-operations` is authorized after regression
+and staged-content safety checks. Stop at Approval Gate S2C-03 Code Review;
+merge, development migration and the next stage require separate authorization.

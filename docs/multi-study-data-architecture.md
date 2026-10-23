@@ -102,3 +102,12 @@ Deferred decisions: group authorship/contribution semantics; P2 section spans;
 D1 submission/reference ownership and privacy; feature registry and subsets;
 protocol/method validation; cross-study reuse; sealing/revocation; retention;
 and pre-snapshot run persistence. No scientific or migration approval is implied.
+
+## S2C-03 review increment
+
+The [durable-operation draft](s2c03-durable-operations.md) now proposes a narrow
+seven-table journal with study/corpus ownership and pre-snapshot operation records.
+It does not implement the wider P2/D1 schema above or change S2A/P1 semantics.
+Its additive revision is prepared and tested only in isolated rollback fixtures;
+it has not been applied to development. See the separate
+[initialized-upgrade safeguards](s2c03-migration-safety.md).

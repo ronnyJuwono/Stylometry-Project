@@ -29,6 +29,13 @@ dist/
 .idea/
 # Research data and derived artifacts: keep outside public repository
 catalog.json
+recovery.json
+*.recovery.json
+publication-ledger.json
+registration.json
+synthetic.marker
+closing.marker
+stylometry-synthetic-*/
 objects/
 data/
 datasets/

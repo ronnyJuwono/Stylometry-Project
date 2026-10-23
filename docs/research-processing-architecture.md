@@ -101,3 +101,12 @@ Use S2A `ExperimentRun` only with a real pinned snapshot satisfying its contract
 Pre-snapshot operation histories need a future reviewed representation, not a
 fabricated dataset. Multi-study ownership/migration details are in the separate
 [data architecture proposal](multi-study-data-architecture.md).
+
+## S2C-03 review increment
+
+The separate [durable-operation foundation](s2c03-durable-operations.md) adds
+opt-in `durable_operations.py`, `recoverable_storage.py` and journal mappings,
+preserving the S2C-02 APIs above. Its synthetic-only service distinguishes staged
+transactions from independently verified commit outcomes; actual commit/restart
+durability remains unproven by rollback fixtures. Scientific methods and UI are
+unchanged. The prepared migration has not been applied to development.
