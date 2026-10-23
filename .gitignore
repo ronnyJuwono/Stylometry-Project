@@ -28,6 +28,8 @@ dist/
 .vscode/
 .idea/
 # Research data and derived artifacts: keep outside public repository
+catalog.json
+objects/
 data/
 datasets/
 student_writing/

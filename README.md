@@ -70,7 +70,8 @@ src/stylometry/
   database.py                optional lazy SQLAlchemy engine factory
   models.py                  PostgreSQL metadata ORM (15 tables)
   persistence.py             explicit validated contract/ORM conversion
-  storage.py                 opaque private object reference contract
+  storage.py                 opaque references, private catalog and opt-in read-only resolver
+  private_filesystem.py      internal no-link Windows/POSIX file access
   migration_safety.py        empty local development target checks
   ui/dashboard.py            four-module Streamlit presentation layer
 tests/                       metadata, configuration, and navigation tests
@@ -200,3 +201,36 @@ Cross-row integrity is checked when explicitly reconstructing a complete
 `ResearchBundle`, but database triggers, concurrent snapshot sealing and immutable
 database privileges are deferred. This foundation is not yet a production
 ingestion service. No ETL, feature extraction or statistical execution is added.
+
+## S2C-01 private filesystem foundation
+
+The opt-in `FilesystemObjectResolver` reads original, extracted, cleaned or artifact
+bytes only through an opaque UUID, private catalog and exact SHA-256 check.
+It never writes files or connects to PostgreSQL. Nothing is wired into dashboard
+startup. See [storage design, validation and approval gate](docs/s2c01-private-storage.md).
+
+Add `STYLOMETRY_PRIVATE_ROOT` privately to the existing ignored `.env` only after
+choosing an approved absolute local directory **outside this repository**. Leave
+it unset for now: S2C-01 uses pytest temporary roots and does not provision or
+inspect real research storage. Do not overwrite an existing `.env` with the
+example template. The environment wins over `.env`, and parent directories are
+never searched for configuration.
+
+The private root must hold `catalog.json` and files laid out as
+`objects/<UUID-as-32-lowercase-hex>/payload`. Catalog entries pin the complete
+`StorageReference`, including its supplied version and provenance. No source
+filename or identity is needed. The catalog and object tree belong outside Git;
+ignore rules are a secondary safeguard. Each new version needs a new object UUID.
+No catalog generation, import or write operation is implemented.
+
+Reads deny access unless an external caller policy explicitly returns `True`.
+Authentication, identity verification and production authorization are **not
+implemented**; a synthetic allow policy in tests is not a production access system.
+All components reject links/reparse points and nonregular/hardlinked files, and
+readable objects are returned as bytes only after full verification. The default
+object limit is 32 MiB; catalog limit is 1 MiB. Backup/access-control procedures
+and remaining platform limits are documented in the storage report.
+
+S2C-01 publication on `feature/s2c01-private-storage` is authorized for ChatGPT
+review after tests and staged-content safety checks. Stop at Approval Gate
+S2C-01; no merge, live research-root configuration or real-data ingestion is authorized.
