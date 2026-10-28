@@ -5,6 +5,7 @@ Credentials, paths, descriptors and server logs stay in private owned scratch.
 Existing databases/services are never used by this harness.
 """
 
+from contextlib import contextmanager
 from datetime import datetime, timezone
 import hashlib
 import importlib.util
@@ -37,21 +38,106 @@ from stylometry.experiments.configurations import ExecutionPlan
 from stylometry.migration_safety import assert_empty_development_target
 from stylometry.pipeline.interfaces import StageInput
 from stylometry.pipeline.registration import RegistrationRequest
-from stylometry.recoverable_storage import RecoveryDescriptor
+from stylometry.recoverable_storage import RecoveryDescriptor, _process_stamp
 from stylometry.storage import StorageReference, StorageAccessDenied
 from stylometry.synthetic_publishing import PublicationMetadata, PublicationPlan, SyntheticPublicationError, WriterBusy, _pin_directory
 from stylometry.upgrade_safety import assert_initialized_upgrade, CATALOG_QUERIES
+from stylometry.private_filesystem import read_private_file
 
 REPO = Path(__file__).resolve().parents[1]
 BIN = Path('C:/Program Files/PostgreSQL/18/bin')
 DATABASE = 'stylometry_test'
 REVIEWED = 'e298919059762f8883e297c584f134878114ab0e'
 POINTER = REPO / '.env.s2c03b-owned-location'
+PROTECTED = ('src', 'migrations', 'app.py', 'alembic.ini', 'pyproject.toml', 'uv.lock')
 
 
 def check(condition, message):
     if not condition:
         raise AssertionError(message)  # Fixed engineering labels only.
+
+
+def verify_reviewed_application(repo=REPO, reviewed=REVIEWED):
+    """Accept later evidence commits, but pin HEAD, index and actual runtime bytes."""
+    def git(*args):
+        result = subprocess.run(['git', *args], cwd=repo, capture_output=True)
+        check(result.returncode == 0, 'Reviewed application verification failed')
+        return result.stdout
+
+    git('merge-base', '--is-ancestor', reviewed, 'HEAD')
+    for target in ('HEAD', '--cached'):
+        git('diff', '--no-ext-diff', '--no-textconv', '--exit-code', reviewed, target, '--', *PROTECTED)
+    names = git('ls-tree', '-r', '--name-only', reviewed, '--', *PROTECTED).decode().splitlines()
+    check(bool(names), 'Reviewed application inventory missing')
+    expected = set(names)
+    actual = set()
+    for name in PROTECTED:
+        path = repo / name
+        paths = path.rglob('*') if path.is_dir() else (path,)
+        for candidate in paths:
+            relative = candidate.relative_to(repo)
+            if any(part == '__pycache__' or part.endswith('.egg-info') for part in relative.parts):
+                continue  # Interpreter/install metadata, never imported source.
+            check(not candidate.is_symlink() and not getattr(candidate.lstat(), 'st_file_attributes', 0) & 0x400,
+                  'Protected application link refused')
+            if candidate.is_file():
+                actual.add(relative.as_posix())
+    check(actual == expected, 'Protected application file inventory changed')
+    for name in names:
+        # Check bytes directly as well: assume-unchanged/skip-worktree cannot hide edits.
+        baseline = git('show', reviewed + ':' + name)
+        current = (repo / name).read_bytes()
+        check(current.replace(b'\r\n', b'\n') == baseline.replace(b'\r\n', b'\n'),
+              'Protected application contents changed')
+
+
+def private_json(root, name):
+    return json.loads(read_private_file(root, (name,), limit=32768))
+
+
+@contextmanager
+def verified_worker_config(data):
+    """Anchor worker input to the parent's private lifecycle record before connecting.
+
+    Capabilities travel over stdin only. This is ownership evidence within the
+    existing trusted-same-account boundary, not authentication against that user.
+    """
+    check(os.name == 'nt', 'Windows-only owned worker')
+    capability = data.get('ownership', {})
+    check(isinstance(capability, dict) and type(capability.get('token')) is str
+          and type(capability.get('root')) is str, 'Worker ownership evidence required')
+    pointer = private_json(REPO, POINTER.name)
+    root = Path(pointer['root'])
+    parent = Path(tempfile.gettempdir()).resolve()
+    check(root.is_absolute() and root.parent == parent and root.name.startswith('stylometry-durability-')
+          and not root.is_relative_to(REPO) and not REPO.is_relative_to(root), 'Worker allocation refused')
+    check(type(capability.get('token')) is str and type(pointer['token']) is str
+          and secrets.compare_digest(capability['token'], pointer['token'])
+          and capability.get('root') == str(root)
+          and type(pointer['pid']) is int and pointer['pid'] > 0
+          and type(pointer['process_stamp']) is int
+          and _process_stamp(pointer['pid']) == pointer['process_stamp'],
+          'Worker ownership capability refused')
+    with _pin_directory(root), _pin_directory(root / 'cluster'):
+        check(root.resolve() == root, 'Worker root moved')
+        record = private_json(root, 'instance-private.json')
+        marker = read_private_file(root, ('owner.marker',), limit=256).decode()
+        info, cluster = root.lstat(), (root / 'cluster').lstat()
+        check(record['root'] == str(root) and record['identity'] == [info.st_dev, info.st_ino]
+              and record['data_directory'] == str(root / 'cluster')
+              and record['data_identity'] == [cluster.st_dev, cluster.st_ino], 'Worker directory identity refused')
+        check(type(record['token']) is str and secrets.compare_digest(record['token'], pointer['token'])
+              and secrets.compare_digest(marker, pointer['token']), 'Worker marker refused')
+        config = {key: record[key] for key in ('host', 'port', 'database', 'user', 'password', 'system_id', 'data_directory')}
+        check(config == data.get('config'), 'Worker target differs from private record')
+        check(config['host'] == '127.0.0.1' and config['database'] == DATABASE
+              and type(config['port']) is int and 1 <= config['port'] <= 65535 and config['port'] != 5432
+              and type(config['system_id']) is str and config['system_id'].isdigit()
+              and int(config['system_id']) > 0, 'Worker target identity refused')
+        pid = read_private_file(root, ('cluster', 'postmaster.pid'), limit=4096).decode().splitlines()
+        check(len(pid) >= 6 and Path(pid[1]) == root / 'cluster' and int(pid[3]) == config['port']
+              and pid[5] == '127.0.0.1', 'Worker postmaster evidence refused')
+        yield config
 
 
 def port():
@@ -105,7 +191,12 @@ class Policy:
 
 
 def worker(data):
-    config, mode = data['config'], data['mode']
+    with verified_worker_config(data) as config:
+        return owned_worker(data, config)
+
+
+def owned_worker(data, config):
+    mode = data['mode']
     check(config['port'] != 5432, 'Existing service port refused')
     engine = engine_for(config,acknowledgement=data.get('acknowledgement'))
     try:
@@ -180,11 +271,13 @@ class OwnedCluster:
         self.user='synthetic_'+uuid4().hex[:12]
         self.password=secrets.token_urlsafe(32)
         self.system_id=None
+        self.data_identity=None
         self.running=False
         self.cases=[]
         self.records=[]
         self.phase='allocated'
-        self.pointer_payload=json.dumps(dict(root=str(self.root),token=self.token,pid=os.getpid()))
+        self.pointer_payload=json.dumps(dict(root=str(self.root),token=self.token,pid=os.getpid(),
+                                             process_stamp=_process_stamp(os.getpid())))
         with POINTER.open('x') as handle:handle.write(self.pointer_payload)
         self.save_private()
 
@@ -198,7 +291,7 @@ class OwnedCluster:
     def save_private(self):
         self.owned()
         (self.root/'instance-private.json').write_text(json.dumps(dict(token=self.token,root=str(self.root),identity=self.file_identity,
-            port=self.port,admin=self.admin,admin_password=self.admin_password,user=self.user,password=self.password,system_id=self.system_id)))
+            data_identity=self.data_identity,admin=self.admin,admin_password=self.admin_password,**self.config)))
 
     def native(self, binary, *args):
         self.owned()
@@ -217,6 +310,11 @@ class OwnedCluster:
     def verify_server(self):
         self.owned()
         check(self.data.is_dir() and self.data.resolve().is_relative_to(self.root), 'Data directory refused')
+        info = self.data.lstat()
+        current_identity = (info.st_dev, info.st_ino)
+        check(not getattr(info, 'st_file_attributes', 0) & 0x400
+              and (self.data_identity is None or self.data_identity == current_identity), 'Cluster directory replaced')
+        self.data_identity = current_identity
         with self.admin_connection() as conn:
             row=conn.execute("SELECT current_setting('data_directory'),inet_server_addr()::text,inet_server_port(),current_setting('server_version_num'),system_identifier::text FROM pg_control_system()").fetchone()
             check(Path(row[0]).resolve()==self.data.resolve() and row[1] in ('127.0.0.1','127.0.0.1/32') and tuple(row[2:4])==(self.port,'180006'), 'Server ownership or address mismatch')
@@ -229,7 +327,12 @@ class OwnedCluster:
 
     @property
     def config(self):
-        return dict(port=self.port,user=self.user,password=self.password,system_id=self.system_id)
+        return dict(host='127.0.0.1',database=DATABASE,port=self.port,user=self.user,password=self.password,
+                    system_id=self.system_id,data_directory=str(self.data))
+
+    @property
+    def ownership(self):
+        return dict(root=str(self.root), token=self.token)
 
     def start(self):
         try:
@@ -354,7 +457,7 @@ class OwnedCluster:
 
     def child(self, mode, case=None, *, expected=0, **extra):
         self.verify_server()
-        data=dict(config=self.config,mode=mode,**(case or {}),**extra)
+        data=dict(config=self.config,ownership=self.ownership,mode=mode,**(case or {}),**extra)
         result=subprocess.run([sys.executable,str(Path(__file__).resolve()),'--worker'],input=json.dumps(data),text=True,
             capture_output=True,timeout=35,creationflags=subprocess.CREATE_NO_WINDOW,cwd=REPO)
         if result.stderr:
@@ -503,7 +606,8 @@ class OwnedCluster:
 
     def live_writer(self, case):
         ready=self.root/('ready-'+uuid4().hex)
-        data=dict(config=self.config,mode='hold',ready=str(ready),**case)
+        self.verify_server()
+        data=dict(config=self.config,ownership=self.ownership,mode='hold',ready=str(ready),**case)
         log=(self.root/'held-child-private.log').open('w')
         process=subprocess.Popen([sys.executable,str(Path(__file__).resolve()),'--worker'],stdin=subprocess.PIPE,
             stdout=subprocess.DEVNULL,stderr=log,text=True,creationflags=subprocess.CREATE_NO_WINDOW,cwd=REPO)
@@ -564,7 +668,7 @@ def main():
             return 2
     check(sys.argv[1:]==['--run-owned-cluster'],'Explicit owned-cluster execution flag required')
     check(os.name=='nt','Windows-only publishing validation')
-    check(subprocess.check_output(['git','rev-parse','HEAD'],cwd=REPO).decode().strip()==REVIEWED,'Reviewed commit mismatch')
+    verify_reviewed_application()
     check(all((BIN/name).is_file() for name in ('initdb.exe','pg_ctl.exe','postgres.exe')),'PostgreSQL binary set missing')
     check(not POINTER.exists(),'An existing private lifecycle record requires inspection; refusing a new cluster')
     check(subprocess.run(['git','check-ignore','-q',str(POINTER)],cwd=REPO).returncode==0,'Private lifecycle record is not ignored')

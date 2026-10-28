@@ -231,3 +231,52 @@ do not approve extraction, QC, feature computation or statistical methods.
 
 Stop at **S2C-03B Approval Gate**. Do not commit, push, merge, migrate development
 or begin S2C-04 without separate authorization.
+
+## Post-validation harness corrections (2026-10-28)
+
+The separately authorized final harness review replaced the exact-HEAD check
+with a fail-closed application-baseline check. The original reviewed application
+commit must be an ancestor. All files under `src/` and `migrations/`, plus
+`app.py`, `alembic.ini`, `pyproject.toml` and `uv.lock`, must match it in HEAD,
+the index and the working tree (allowing Windows CRLF checkout normalization).
+The check also rejects extra protected files and checks actual contents despite
+Git assume-unchanged/skip-worktree flags. Interpreter caches and installation
+egg-info metadata are excluded. Later documentation and harness-only commits
+therefore permit reexecution without authorizing runtime changes.
+
+Internal workers now require the ignored private lifecycle pointer, matching
+ownership capability and marker, exact allocated root/device/inode and cluster
+directory/device/inode, and the parent's live PID plus process creation time.
+The creation time prevents PID-reuse acceptance and supports Windows virtual
+environment launcher processes. No immediate-parent-PID assumption is made.
+Private records are read through the existing bounded no-link filesystem helper;
+root and cluster ancestor handles remain pinned throughout worker execution.
+The worker compares the entire requested connection configuration with the
+parent's private record, requires the fixed test database and non-5432 loopback
+port, and checks postmaster directory/address/port evidence before engine
+creation. The parent records the directory identity and system identifier after
+verifying the actual server; the worker checks the connected server's system
+identifier/database/address/port before migration metadata or operation work.
+Missing, corrupt or inconsistent evidence fails closed. Capabilities travel
+through private stdin, never command arguments or public output.
+
+Related regression tests use temporary Git repositories, artificial ownership
+records and isolated Python children; no PostgreSQL server is created. They
+cover later evidence commits, committed/staged/unstaged/hidden runtime changes,
+direct worker refusal, incorrect system identity, directory/marker/capability,
+parent identity, postmaster evidence, port and database. Existing application
+modules, migrations, dependencies and scientific contracts remain unchanged.
+
+The final ordinary regression run passed **304 tests (253 existing plus 51 new),
+0 failed, 2 skipped**, 306 collected, in 24.84 seconds. The skips remain the two
+Windows file-symlink privilege cases at `tests/test_private_storage.py:59`.
+Configured rollback-only PostgreSQL tests ran; no development migration was
+performed. Streamlit startup health returned HTTP 200 and its temporary process
+was stopped. The reviewed-application precheck passed on the later checkout;
+`git diff --check` passed.
+
+These are post-validation harness improvements, **not a rerun of live durability
+validation**. The 25 live check groups and original timings above remain
+historical observations of the earlier harness. The corrected live lifecycle
+still requires separate authorization to execute; the trusted same-account,
+Windows-only and other durability/production limitations above still apply.
