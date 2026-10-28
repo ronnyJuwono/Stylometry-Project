@@ -70,8 +70,20 @@ def assert_initialized_upgrade(connection: Connection, *, database: str, target:
     from stylometry.models import Base
     names = sorted((*Base.metadata.tables, 'alembic_version'))
     connection.execute(text('LOCK TABLE ' + ','.join('public.' + n for n in names) + ' IN ACCESS EXCLUSIVE MODE'))
-    if schema_evidence(connection) != EXPECTED:
-        raise ValueError('Unexpected schema; migration refused.')
+    evidence = schema_evidence(connection)
+    if evidence != EXPECTED:
+        from stylometry.restored_schema_compatibility import (
+            matches_restored_constraints, SEMANTIC_CONTEXT_QUERY,
+        )
+        # The sole exception is the complete S2C-03D restored CHECK inventory.
+        # Keep all other categories exact, including column types and indexes.
+        if (evidence.keys() != EXPECTED.keys()
+                or any(evidence[k] != v for k, v in EXPECTED.items()
+                       if k != 'constraints')
+                or not matches_restored_constraints(connection.execute(
+                    text(CATALOG_QUERIES['constraints'])))
+                or connection.scalar(text(SEMANTIC_CONTEXT_QUERY)) is not True):
+            raise ValueError('Unexpected schema; migration refused.')
     from stylometry.paper1 import TASKS
     expected = sorted((str(t.code), str(t.genre), str(t.form)) for t in TASKS)
     actual = [tuple(row) for row in connection.execute(text('SELECT code,genre,form FROM public.task ORDER BY code'))]
